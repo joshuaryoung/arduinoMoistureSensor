@@ -14,7 +14,10 @@ app.listen(EXPRESS_PORT, () => {
 })
 
 app.post("/", async (req, res) => {
-  const { method, body } = req
+  const {
+    method,
+    body: { analogReadValue },
+  } = req
   const timeStamp = moment().format()
   const logName = "log.json"
   let log = []
@@ -22,29 +25,26 @@ app.post("/", async (req, res) => {
   console.log(
     `${timeStamp} - ${method} Request Received. Writing to ${logName}`
   )
-  console.log({ body })
+  console.log({ analogReadValue })
 
   try {
-    log = JSON.parse(await fsPromises.readFile(logName, "utf8"))
-  } catch (error) {
-    console.warn(error)
-  }
-
-  try {
-    await fsPromises.writeFile(
+    // const openRes = await fsPromises.open(logName)
+    // console.log({ openRes })
+    await fsPromises.appendFile(
       logName,
-      JSON.stringify([
-        ...log,
+      JSON.stringify(
         {
-          body,
+          analogReadValue,
           method,
           timeStamp,
         },
-      ])
+        undefined,
+        2
+      ) + ","
     )
   } catch (error) {
-    console.warn(error)
+    console.trace(error)
   }
 
-  res.status(200).send('<input type="text"></input>')
+  res.status(200).send(JSON.stringify({ analogReadValue }, undefined, 2))
 })
