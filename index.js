@@ -18,30 +18,44 @@ app.post("/", async (req, res) => {
     method,
     body: { analogReadValue },
   } = req
-  const timeStamp = moment().format()
-  const logName = "log.json"
+  const timeStamp = moment().format("l LTS")
+  const logPath = "log.json"
   let log = []
 
   console.log(
-    `${timeStamp} - ${method} Request Received. Writing to ${logName}`
+    `${timeStamp} - ${method} Request Received. Writing to ${logPath}`
   )
   console.log({ analogReadValue })
+  let logAlreadyExists
 
   try {
-    // const openRes = await fsPromises.open(logName)
-    // console.log({ openRes })
-    await fsPromises.appendFile(
-      logName,
-      JSON.stringify(
-        {
-          analogReadValue,
-          method,
-          timeStamp,
-        },
-        undefined,
-        2
-      ) + ","
+    logAlreadyExists = await fsPromises.stat(logPath)
+  } catch (error) {
+    console.error(error)
+    logAlreadyExists = false
+  }
+  console.log({ logAlreadyExists })
+  try {
+    const logString = logAlreadyExists
+      ? await fsPromises.readFile(logPath, "utf-8")
+      : "[]"
+    const logContents = JSON.parse(logString)
+
+    const appendedLogContents = [
+      ...logContents,
+      {
+        analogReadValue,
+        method,
+        timeStamp,
+      },
+    ]
+    const appendedContentsString = JSON.stringify(
+      appendedLogContents,
+      undefined,
+      2
     )
+
+    await fsPromises.writeFile(logPath, appendedContentsString)
   } catch (error) {
     console.trace(error)
   }
